@@ -1,4 +1,5 @@
 import { httpResponse } from "../../utils/httpResponse.js";
+import { ReferralService } from "../referral/referral.service.js";
 import { UserService } from "./user.service.js";
 
 export const UserController = {
@@ -45,6 +46,14 @@ export const UserController = {
       } else {
         return httpResponse.INTERNAL_SERVER_ERROR(res, error);
       }
+    }
+  },
+  getUserReferrals: async (req, res) => {
+    try {
+      const response = await ReferralService.getUserReferrals(req, res);
+      return httpResponse.SUCCESS(res, response);
+    } catch (error) {
+      return httpResponse.INTERNAL_SERVER_ERROR(res, error);
     }
   },
 };

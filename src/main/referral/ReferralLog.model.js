@@ -22,7 +22,7 @@ const ReferralLog = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
-    referrer: {
+    referrer_id: {
       type: DataTypes.UUID,
       allowNull: true,
     },

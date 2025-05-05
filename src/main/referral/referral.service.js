@@ -1,19 +1,25 @@
 import { UserModel } from "../user/user.schema.js";
-import { ReferralLogModel } from "./referralLog.schema.js";
-import { httpResponse } from "../../utils/httpResponse.js";
 // import { ReferralDbLayer } from "./referral.dbLayer.js";
 import { INVITE_LIMITS } from "../../constants/permission.js";
 import ReferralLog from "./ReferralLog.model.js";
 import { ReferralDbLayer } from "./db.layer.js";
+import jwt from "jsonwebtoken";
+import config from "../../config/index.js"
 
 export class ReferralService {
-  static async createReferral(body) {
-    const referrerRole = body.userRole;
-
+  static async createReferral(req) {
+    const referrerRole = req.body.userRole;
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      throw new Error("Unauthorized: No token provided");
+    }
+    const decoded = jwt.verify(token, config.env.jwtSecret);
+    console.log("Decoded token:", decoded);
+    const referrerId = decoded.user.id;
     if (referrerRole != "admin") {
       const checkLimits = await ReferralDbLayer.checkLimits(
-        body.referrer,
-        body.roles
+        req.body.referrer,
+        req.body.roles
       );
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const count = checkLimits.reduce((acc, item) => {
@@ -23,14 +29,16 @@ export class ReferralService {
         }
         return acc + 1;
       }, 0);
-      const maxAllowed = INVITE_LIMITS?.[referrerRole]?.[body.roles] ?? 0;
+      const maxAllowed = INVITE_LIMITS?.[referrerRole]?.[req.body.roles] ?? 0;
       if (maxAllowed - 1 < count) {
         throw new Error("Bad Request: You have reached the limit of invites");
       }
       console.log(maxAllowed);
     }
-    return ReferralLog.create({ ...body });
+    return ReferralLog.create({ ...req.body, referrer_id: referrerId });
   }
+
+
   static async referralsReset(req, res) {
     const { referrerId } = req.params;
     const updated = await ReferralDbLayer.referralsReset(referrerId);
@@ -82,4 +90,30 @@ export class ReferralService {
       },
     });
   }
+
+  static async getUserReferrals(req, res) {
+    try {
+      const token = req.headers.authorization?.split(" ")[1];
+      if (!token) {
+        throw new Error("Unauthorized: No token provided");
+      }
+
+      const decoded = jwt.verify(token, config.env.jwtSecret);
+      console.log("Decoded token:", decoded);
+      const referrerId = decoded.user.id;
+
+      const referrals = await ReferralLog.findAll({
+        where: { referrer_id: referrerId },
+      });
+      if (!referrals || referrals.length === 0) {
+        return [];
+      }
+      console.log("Referrals:", referrals);
+      return referrals;
+    } catch (error) {
+      console.error("Error in getUserReferrals:", error.message);
+      throw new Error(error.message || "Failed to fetch referrals");
+    }
+  }
+
 }

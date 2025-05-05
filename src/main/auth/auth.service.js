@@ -97,7 +97,7 @@ export const AuthService = {
     const authHeader = req.header("authorization");
     const bearerToken = authHeader.split(" ")[1];
     const decoded = jwt.verify(bearerToken, config.env.jwtSecret);
-    const id = decoded.user._id;
+    const id = decoded.user.id;
 
     const user = await AuthDbLayer.getById(id);
     if (!user) {

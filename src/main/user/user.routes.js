@@ -28,5 +28,10 @@ router.put(
   validate(UserValidationSchema.update),
   UserController.update
 );
+router.get(
+  "/referrals",
+  authenticate,
+  UserController.getUserReferrals
+);
 
 export default router;

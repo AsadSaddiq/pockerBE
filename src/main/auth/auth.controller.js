@@ -28,7 +28,7 @@ export const AuthController = {
 
   createReferral: async (req, res) => {
     try {
-      const response = await ReferralService.createReferral(req.body);
+      const response = await ReferralService.createReferral(req);
       if (req.body.email) {
         sendMailHelper({
           to: req.body.email,
